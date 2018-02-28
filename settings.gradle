@@ -1,0 +1,11 @@
+rootProject.name = 'renewal-notifications'
+include 'domain'
+include 'integration'
+include 'application'
+
+rootProject.children.each{ adjustName(it) }
+
+def adjustName(module) {
+    module.name = 'renewal-notifications-' + module.name
+}
+

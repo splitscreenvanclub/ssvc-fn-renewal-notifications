@@ -1,0 +1,24 @@
+apply plugin: "net.ltgt.apt"
+apply plugin: "application"
+
+dependencies {
+    compile project(':renewal-notifications-integration'), project(':renewal-notifications-domain')
+    compile 'com.google.dagger:dagger:2.0.2'
+    apt 'com.google.dagger:dagger-compiler:2.0.2'
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'SsvcRenewalNotifications',
+                'Implementation-Version': "$version",
+                'Main-Class': 'uk.org.ssvc.renewalnotifications.application.RenewalNotificationsApplication'
+    }
+    baseName = 'renewalnotifications'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+build.finalizedBy(fatJar)
+
+mainClassName = "uk.org.ssvc.renewalnotifications.application.RenewalNotificationsApplication"
+applicationDefaultJvmArgs = []

@@ -1,0 +1,1 @@
+worker: java -Dfile.encoding=UTF8 -jar application/build/libs/renewalnotifications-1.0.jar
