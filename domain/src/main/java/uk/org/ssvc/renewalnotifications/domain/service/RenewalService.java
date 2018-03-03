@@ -50,11 +50,13 @@ public class RenewalService {
 
     private List<Member> membershipsWhichLapsedRecently() {
         LocalDate today = LocalDate.now();
+        LocalDate twoWeeksAgo = today.minusDays(15);
+        LocalDate weekAgo = today.minusDays(7);
 
         // Don't notify immediately to reduce notifications to those currently renewing.
         return memberRepository.findByCriteria(new MemberFilterCriteria()
-            .with(EXPIRY_BEFORE, today.minusDays(10))
-            .with(EXPIRY_AFTER, today.minusDays(15)));
+            .with(EXPIRY_AFTER, twoWeeksAgo)
+            .with(EXPIRY_BEFORE, weekAgo));
     }
 
 }

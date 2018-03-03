@@ -50,12 +50,35 @@ public class SendRenewalNotificationCommand {
     private Message buildMessage(Member member) {
         Message message = new Message(notificationType.getMessageType());
         LocalDate expiryDate = member.getRenewalDate().getExpiryDate();
+        long daysSinceExpiry = ChronoUnit.DAYS.between(expiryDate, LocalDate.now(ZoneOffset.UTC));
 
-        message = message.withVariable("expiryDate", expiryDate.format(ofPattern("dd MMM yyyy")));
-        message = message.withVariable("expiryDateFromNow",
-            ChronoUnit.DAYS.between(expiryDate, LocalDate.now(ZoneOffset.UTC)) + " days ago");
+        message = message.withVariable("expiryDate", dateAsString(expiryDate));
+        message = message.withVariable("expiryDateFromNow", daysSinceExpiry > 0 ?
+            (daysSinceExpiry + " days ago") :
+            ("in " + (daysSinceExpiry*-1) + " days"));
 
         return message;
+    }
+
+    private String dateAsString(LocalDate date) {
+        int dayOfMonth = date.getDayOfMonth();
+        String ordinalIndicator = ordinalIndicator(dayOfMonth);
+        String monthYear = date.format(ofPattern("MMMM YYYY"));
+
+        return dayOfMonth + ordinalIndicator + " " + monthYear;
+    }
+
+    private String ordinalIndicator(int dayOfMonth) {
+        if (dayOfMonth >= 11 && dayOfMonth <= 13) {
+            return "th";
+        }
+
+        switch (dayOfMonth % 10) {
+            case 1:  return "st";
+            case 2:  return "nd";
+            case 3:  return "rd";
+            default: return "th";
+        }
     }
 
 }
