@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 import static uk.org.ssvc.core.domain.model.member.search.MemberSearchField.EXPIRY_AFTER;
+import static uk.org.ssvc.core.domain.model.member.search.MemberSearchField.EXPIRY_BEFORE;
 import static uk.org.ssvc.renewalnotifications.domain.model.RenewalNotificationType.MEMBERSHIP_EXPIRING_SOON;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -43,8 +44,9 @@ public class RenewalServiceTest {
     }
 
     @Test
-    public void sendLapsedMembershipReminders_usesCorrectFilterCriteria() throws Exception {
-        LocalDate tenDaysTime = LocalDate.now().plusDays(10);
+    public void sendExpiringSoon_usesCorrectFilterCriteria() throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate elevenDaysTime = today.plusDays(11);
 
         subject.sendMembershipRenewalNotification(MEMBERSHIP_EXPIRING_SOON, 10);
 
@@ -52,7 +54,24 @@ public class RenewalServiceTest {
 
         verify(memberRepository).findByCriteria(criteria.capture());
 
-        assertThat(criteria.getValue().valueFor(EXPIRY_AFTER).get()).isEqualTo(tenDaysTime);
+        assertThat(criteria.getValue().valueFor(EXPIRY_BEFORE).get()).isEqualTo(elevenDaysTime);
+        assertThat(criteria.getValue().valueFor(EXPIRY_AFTER).get()).isEqualTo(today);
+    }
+
+    @Test
+    public void sendLapsedMembershipReminders_usesCorrectFilterCriteria() throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate fourteenDaysAgo = today.minusDays(14);
+        LocalDate thirtyDaysAgo = today.minusDays(30);
+
+        subject.sendMembershipRenewalNotification(MEMBERSHIP_EXPIRING_SOON, -15);
+
+        ArgumentCaptor<MemberFilterCriteria> criteria = ArgumentCaptor.forClass(MemberFilterCriteria.class);
+
+        verify(memberRepository).findByCriteria(criteria.capture());
+
+        assertThat(criteria.getValue().valueFor(EXPIRY_BEFORE).get()).isEqualTo(fourteenDaysAgo);
+        assertThat(criteria.getValue().valueFor(EXPIRY_AFTER).get()).isEqualTo(thirtyDaysAgo);
     }
 
     @Test
