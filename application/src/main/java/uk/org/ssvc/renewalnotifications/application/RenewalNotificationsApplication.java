@@ -13,8 +13,7 @@ public class RenewalNotificationsApplication {
             .build();
 
         app.registry().initialise();
-        app.renewalService().sendLapsedMembershipReminders();
-        app.renewalService().sendMembershipUpForRenewalReminders();
+        app.renewalService().sendMembershipRenewalNotifications();
     }
 
 }

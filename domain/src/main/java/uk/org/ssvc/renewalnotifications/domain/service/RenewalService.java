@@ -4,6 +4,7 @@ import uk.org.ssvc.core.domain.model.member.Member;
 import uk.org.ssvc.core.domain.model.member.search.MemberFilterCriteria;
 import uk.org.ssvc.core.domain.repository.MemberRepository;
 import uk.org.ssvc.renewalnotifications.domain.factory.RenewalNotificationCommandFactory;
+import uk.org.ssvc.renewalnotifications.domain.model.RenewalNotificationType;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -12,8 +13,7 @@ import java.util.List;
 
 import static uk.org.ssvc.core.domain.model.member.search.MemberSearchField.EXPIRY_AFTER;
 import static uk.org.ssvc.core.domain.model.member.search.MemberSearchField.EXPIRY_BEFORE;
-import static uk.org.ssvc.renewalnotifications.domain.model.RenewalNotificationType.MEMBERSHIP_EXPIRING_SOON;
-import static uk.org.ssvc.renewalnotifications.domain.model.RenewalNotificationType.MEMBERSHIP_RECENTLY_LAPSED;
+import static uk.org.ssvc.renewalnotifications.domain.model.RenewalNotificationType.*;
 
 @Singleton
 public class RenewalService {
@@ -28,35 +28,30 @@ public class RenewalService {
         this.commandFactory = commandFactory;
     }
 
-    public void sendLapsedMembershipReminders() {
+    public void sendMembershipRenewalNotifications() {
+        sendMembershipRenewalNotification(MEMBERSHIP_EXPIRING_SOON, 25);
+        sendMembershipRenewalNotification(MEMBERSHIP_EXPIRING_NOW, 10);
+        sendMembershipRenewalNotification(MEMBERSHIP_RECENTLY_LAPSED, -14);
+    }
+
+    public void sendMembershipRenewalNotification(RenewalNotificationType type, int daysUntilExpiry) {
         commandFactory
-            .createCommandFor(membershipsWhichLapsedRecently(), MEMBERSHIP_RECENTLY_LAPSED)
+            .createCommandFor(membershipsWithDaysTillExpiry(daysUntilExpiry), type)
             .run();
     }
 
-    public void sendMembershipUpForRenewalReminders() {
-        commandFactory
-            .createCommandFor(membershipsUpForRenewal(), MEMBERSHIP_EXPIRING_SOON)
-            .run();
-    }
-
-    private List<Member> membershipsUpForRenewal() {
+    private List<Member> membershipsWithDaysTillExpiry(int daysUntilExpiry) {
         LocalDate today = LocalDate.now();
 
-        return memberRepository.findByCriteria(MemberFilterCriteria
-            .activeMembers()
-            .with(EXPIRY_BEFORE, today.plusDays(25)));
-    }
+        if (daysUntilExpiry > 0) {
+            return memberRepository.findByCriteria(new MemberFilterCriteria()
+                .with(EXPIRY_BEFORE, today.plusDays(daysUntilExpiry+1))
+                .with(EXPIRY_AFTER, today));
+        }
 
-    private List<Member> membershipsWhichLapsedRecently() {
-        LocalDate today = LocalDate.now();
-        LocalDate twoWeeksAgo = today.minusDays(15);
-        LocalDate weekAgo = today.minusDays(7);
-
-        // Don't notify immediately to reduce notifications to those currently renewing.
         return memberRepository.findByCriteria(new MemberFilterCriteria()
-            .with(EXPIRY_AFTER, twoWeeksAgo)
-            .with(EXPIRY_BEFORE, weekAgo));
+            .with(EXPIRY_BEFORE, today.plusDays(daysUntilExpiry+1))
+            .with(EXPIRY_AFTER, today.plusDays(-30)));
     }
 
 }
